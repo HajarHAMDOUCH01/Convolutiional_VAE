@@ -36,7 +36,7 @@ def train_vae():
     print(f"Using device: {device}")
     
     z_dim = 32
-    batch_size = 4
+    batch_size = 1
     lr = 1e-3
     num_epochs = 100
     beta = 1.0  
