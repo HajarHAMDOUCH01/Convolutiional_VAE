@@ -41,7 +41,6 @@ class ConvolutionnalVAE(nn.Module):
         self.l_mu = nn.Linear(self.h_dim, z_dim)
         self.l_logvar = nn.Linear(self.h_dim, z_dim)  
         
-        # Decoder projection
         self.dec_projection = nn.Linear(z_dim, self.h_dim)  
         
         # Decoder

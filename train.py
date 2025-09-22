@@ -36,9 +36,9 @@ def train_vae():
     print(f"Using device: {device}")
     
     z_dim = 32
-    batch_size = 64
+    batch_size = 4
     lr = 1e-3
-    num_epochs = 50
+    num_epochs = 100
     beta = 1.0  
     
     root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
@@ -80,9 +80,9 @@ def train_vae():
             num_samples += batch_size_actual
             
             loop.set_postfix({
-                "Loss": f"{loss.item()/batch_size_actual:.2f}",
-                "BCE": f"{bce_loss.item()/batch_size_actual:.2f}", 
-                "KLD": f"{kld_loss.item()/batch_size_actual:.2f}"
+                "Loss": f"{loss/batch_size_actual:.2f}",
+                "BCE": f"{bce_loss/batch_size_actual:.2f}", 
+                "KLD": f"{kld_loss/batch_size_actual:.2f}"
             })
         
         avg_loss = total_loss / num_samples
@@ -101,18 +101,14 @@ def train_vae():
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'loss': avg_loss,
-                'hyperparameters': {
-                    'z_dim': z_dim,
-                    'lr': lr,
-                    'beta': beta
-                }
             }
             torch.save(checkpoint, f'vae_checkpoint_epoch_{epoch+1}.pth')
             print(f"Checkpoint saved at epoch {epoch+1}")
     
     print("Training complete! Saving final model...")
     torch.save(model.state_dict(), 'vae_final_model.pth')
+    torch.save(model, 'vae_final_model.bin')
+
     
     # training curves
     plt.figure(figsize=(15, 5))
