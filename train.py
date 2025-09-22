@@ -24,7 +24,7 @@ def get_transforms():
     ])
 
 def vae_loss(recon_x, x, mu, log_var, beta=1.0):
-    BCE = nn.functional.binary_cross_entropy_with_logits(recon_x, x, reduction='sum')
+    BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='sum')
     
     # KL Divergence loss
     KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -71,6 +71,7 @@ def train_vae():
             loss, bce_loss, kld_loss = vae_loss(recon_imgs, real_images, mu, logvar, beta)
             
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             
             total_loss += loss
