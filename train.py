@@ -7,7 +7,7 @@ from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 
 import sys 
-sys.path.append("/content/Convolutionnal_VAE")
+sys.path.append("/content/Convolutiional_VAE")
 
 from vae_model import ConvolutionnalVAE
 from dataset import FacesDataset
@@ -68,6 +68,7 @@ def train_vae():
             
             optimizer.zero_grad()
             recon_imgs, mu, logvar = model(real_images)
+            recon_imgs = torch.clamp(recon_imgs, 0.0,1.0)
             
             loss, bce_loss, kld_loss = vae_loss(recon_imgs, real_images, mu, logvar, beta)
             

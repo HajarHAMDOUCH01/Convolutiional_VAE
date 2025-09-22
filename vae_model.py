@@ -56,6 +56,7 @@ class ConvolutionnalVAE(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.ConvTranspose2d(32, image_channels, kernel_size=4, stride=2, padding=1),  # 128->256
+            nn.ReLU(),
             nn.Sigmoid()  
         )
     
