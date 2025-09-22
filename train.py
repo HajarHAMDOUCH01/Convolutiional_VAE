@@ -24,7 +24,7 @@ def get_transforms():
     ])
 
 def vae_loss(recon_x, x, mu, log_var, beta=1.0):
-    BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='sum')
+    BCE = nn.functional.binary_cross_entropy_with_logits(recon_x, x, reduction='sum')
     
     # KL Divergence loss
     KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -38,7 +38,7 @@ def train_vae():
     z_dim = 32
     batch_size = 1
     lr = 1e-3
-    num_epochs = 100
+    num_epochs = 50
     beta = 1.0  
     
     root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
@@ -67,9 +67,7 @@ def train_vae():
             batch_size_actual = real_images.size(0)
             
             optimizer.zero_grad()
-            recon_imgs, mu, logvar = model(real_images)
-            recon_imgs = torch.clamp(recon_imgs, 0.0,1.0)
-            
+            recon_imgs, mu, logvar = model(real_images)            
             loss, bce_loss, kld_loss = vae_loss(recon_imgs, real_images, mu, logvar, beta)
             
             loss.backward()

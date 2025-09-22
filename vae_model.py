@@ -22,7 +22,7 @@ class ConvolutionnalVAE(nn.Module):
         
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),  # 128->64
+            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),  # 128->64
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),  # 64->32
@@ -49,7 +49,7 @@ class ConvolutionnalVAE(nn.Module):
             nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),   # 32->64
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),    # 64->128
+            nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1),    # 64->128
         )
     
     def reparametrize(self, mu, log_var):
