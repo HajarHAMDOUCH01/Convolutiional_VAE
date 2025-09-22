@@ -19,7 +19,7 @@ print(f"using device : {device}")
 
 def get_transforms():
     return transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize((128, 128)),
         transforms.ToTensor(),
     ])
 
@@ -46,7 +46,7 @@ def train_vae():
     faces_dataset = FacesDataset(root=root, transform=transform)
     dataloader = DataLoader(faces_dataset, batch_size=batch_size, shuffle=True)
     
-    model = ConvolutionnalVAE(image_channels=3, z_dim=z_dim, input_size=256).to(device)
+    model = ConvolutionnalVAE(image_channels=3, z_dim=z_dim, input_size=128).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
     model.train()

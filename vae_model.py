@@ -16,15 +16,12 @@ class Unflatten(nn.Module):
         return input.view(input.size(0), self.channels, self.height, self.width)
 
 class ConvolutionnalVAE(nn.Module):
-    def __init__(self, image_channels=3, z_dim=32, input_size=256):
+    def __init__(self, image_channels=3, z_dim=32, input_size=128):
         super(ConvolutionnalVAE, self).__init__()
         self.h_dim = 256 * 16 * 16  # 65536
         
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(image_channels, 32, kernel_size=4, stride=2, padding=1),  # 256->128
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),  # 128->64
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -53,10 +50,6 @@ class ConvolutionnalVAE(nn.Module):
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),    # 64->128
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.ConvTranspose2d(32, image_channels, kernel_size=4, stride=2, padding=1),  # 128->256
-            nn.Sigmoid()  
         )
     
     def reparametrize(self, mu, log_var):
@@ -79,6 +72,8 @@ class ConvolutionnalVAE(nn.Module):
     def decode(self, z):
         z = self.dec_projection(z)  
         z = self.decoder(z)
+        z = torch.clamp(z, min=-10, max=10)
+        z = torch.sigmoid(z)
         return z
         
     def forward(self, x):
