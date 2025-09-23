@@ -44,9 +44,9 @@ def train_vae():
 
     clear_memory()
     
-    z_dim = 128
-    batch_size = 16
-    lr = 1e-3
+    z_dim = 256
+    batch_size = 32
+    lr = 5e-4
     num_epochs = 300
     beta = 0.5
     
