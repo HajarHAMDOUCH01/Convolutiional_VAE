@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
+import gc
 
 import sys 
 sys.path.append("/content/Convolutiional_VAE")
@@ -24,27 +25,41 @@ def get_transforms():
     ])
 
 def vae_loss(recon_x, x, mu, log_var, beta=1.0):
-    BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='sum')
+    BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='mean')
     
     # KL Divergence loss
-    KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+    KLD = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
     
     return BCE + beta * KLD, BCE, KLD
+
+def clear_memory():
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+    gc.collect()
 
 def train_vae():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
+
+    clear_memory()
     
-    z_dim = 32
-    batch_size = 1
+    z_dim = 128
+    batch_size = 16
     lr = 1e-3
-    num_epochs = 50
-    beta = 1.5
+    num_epochs = 300
+    beta = 0.5
     
     root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
     transform = get_transforms()
     faces_dataset = FacesDataset(root=root, transform=transform)
-    dataloader = DataLoader(faces_dataset, batch_size=batch_size, shuffle=True)
+    dataloader = DataLoader(faces_dataset, 
+                            batch_size=batch_size, 
+                            shuffle=True,
+                            num_workers=0,
+                            pin_memory=False,
+                            drop_last=True
+                            )
     
     model = ConvolutionnalVAE(image_channels=3, z_dim=z_dim, input_size=256).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -58,12 +73,12 @@ def train_vae():
         total_loss = 0
         total_bce = 0
         total_kld = 0
-        num_samples = 0
+        num_batchs = 0
         
         loop = tqdm(dataloader, leave=True, desc=f"Epoch {epoch+1}/{num_epochs}")
         
         for batch_idx, real_images in enumerate(loop):
-            real_images = real_images.to(device)
+            real_images = real_images.to(device, non_blocking=True)
             batch_size_actual = real_images.size(0)
             
             optimizer.zero_grad()
@@ -74,20 +89,26 @@ def train_vae():
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             
-            total_loss += loss
-            total_bce += bce_loss
-            total_kld += kld_loss
-            num_samples += batch_size_actual
+            total_loss += loss.detach().item()
+            total_bce += bce_loss.detach().item()
+            total_kld += kld_loss.detach().item()
+            num_batchs += 1
             
             loop.set_postfix({
-                "Loss": f"{loss/batch_size_actual:.2f}",
-                "BCE": f"{bce_loss/batch_size_actual:.2f}", 
-                "KLD": f"{kld_loss/batch_size_actual:.2f}"
+                "Loss": f"{loss.item():.4f}",
+                "BCE": f"{bce_loss.item():.4f}", 
+                "KLD": f"{kld_loss.item():.4f}",
+                "Beta": f"{beta:.2f}"
             })
+
+            del recon_imgs, mu, logvar, loss, bce_loss, kld_loss
+
+            if batch_idx % 50 == 0:
+                clear_memory()
         
-        avg_loss = total_loss / num_samples
-        avg_bce = total_bce / num_samples
-        avg_kld = total_kld / num_samples
+        avg_loss = total_loss / num_batchs
+        avg_bce = total_bce / num_batchs
+        avg_kld = total_kld / num_batchs
         
         epoch_losses.append(avg_loss)
         epoch_bce_losses.append(avg_bce)
@@ -96,19 +117,34 @@ def train_vae():
         print(f"Epoch {epoch+1} Complete - Avg Loss: {avg_loss:.4f}, "
               f"BCE: {avg_bce:.4f}, KLD: {avg_kld:.4f}")
         
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 20:
+          beta = min(beta + 0.1 , 1.0)
+
+        # cleaning memory after each epoch
+        clear_memory()
+        
+        if (epoch + 1) % 100 == 0:
             checkpoint = {
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
             }
             torch.save(checkpoint, f'vae_checkpoint_epoch_{epoch+1}.pth')
+            torch.save(model, f'vae_model_epoch_{epoch+1}.bin')
             print(f"Checkpoint saved at epoch {epoch+1}")
+    
+    del checkpoint
+    clear_memory()
     
     print("Training complete! Saving final model...")
     torch.save(model.state_dict(), 'vae_final_model.pth')
     torch.save(model, 'vae_final_model.bin')
 
+    plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses)
+
+    return model, epoch_losses
+
+def plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses):
     
     # training curves
     plt.figure(figsize=(15, 5))
@@ -137,8 +173,8 @@ def train_vae():
     plt.tight_layout()
     plt.savefig('training_curves.png', dpi=150, bbox_inches='tight')
     plt.show()
+    plt.close()
     
-    return model, epoch_losses
 
 if __name__=="__main__":
-  train_vae()
+  model , losses = train_vae()
