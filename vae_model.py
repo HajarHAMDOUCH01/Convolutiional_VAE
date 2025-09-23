@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tqdm.notebook import tqdm
+from torch import Tensor
 
 class Unflatten(nn.Module):
     def __init__(self, channels=256, height=16, width=16):
@@ -22,15 +23,16 @@ class ConvolutionnalVAE(nn.Module):
         
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),  # 128->64
-            nn.BatchNorm2d(64),
+            nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1),  # 256->128
+            nn.LayerNorm([32,128,128]),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),  # 64->32
-            nn.BatchNorm2d(128),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),   # 128->64
+            nn.LayerNorm([64,64,64]),
             nn.ReLU(),
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),  # 32->16
-            nn.BatchNorm2d(256),
+            nn.Conv2d(64, 32, kernel_size=4, stride=2, padding=1),    # 64->32
+            nn.LayerNorm([32,32,32]),
             nn.ReLU(),
+            nn.Conv2d(32, 3, kernel_size=4, stride=2, padding=1),    # 32->16
             nn.Flatten()
         )
         
@@ -44,12 +46,15 @@ class ConvolutionnalVAE(nn.Module):
         self.decoder = nn.Sequential(
             Unflatten(channels=256, height=16, width=16),
             nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),  # 16->32
-            nn.BatchNorm2d(128),
+            nn.LayerNorm([128,32,32]),
             nn.ReLU(),
             nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),   # 32->64
-            nn.BatchNorm2d(64),
+            nn.LayerNorm([64,64,64]),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1),    # 64->128
+            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),    # 64->128
+            nn.LayerNorm([32,128,128]),
+            nn.ReLU(),
+            nn.ConvTranspose2d(32, 3, kernel_size=4, stride=2, padding=1),    # 128->256
         )
     
     def reparametrize(self, mu, log_var):
