@@ -129,16 +129,16 @@ def train_vae():
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
             }
-            torch.save(checkpoint, f'vae_checkpoint_epoch_{epoch+1}.pth')
-            torch.save(model, f'vae_model_epoch_{epoch+1}.bin')
+            torch.save(checkpoint, f'/content/drive/MyDrive/vae_checkpoint_epoch_{epoch+1}.pth')
+            torch.save(model, f'/content/drive/MyDrive/vae_model_epoch_{epoch+1}.bin')
             print(f"Checkpoint saved at epoch {epoch+1}")
     
     del checkpoint
     clear_memory()
     
     print("Training complete! Saving final model...")
-    torch.save(model.state_dict(), 'vae_final_model.pth')
-    torch.save(model, 'vae_final_model.bin')
+    torch.save(model.state_dict(), '/content/drive/MyDrive/vae_final_model.pth')
+    torch.save(model, '/content/drive/MyDrive/vae_final_model.bin')
 
     plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses)
 
@@ -171,7 +171,7 @@ def plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses):
     plt.legend()
     
     plt.tight_layout()
-    plt.savefig('training_curves.png', dpi=150, bbox_inches='tight')
+    plt.savefig('/content/drive/MyDrive/training_curves.png', dpi=150, bbox_inches='tight')
     plt.show()
     plt.close()
     
