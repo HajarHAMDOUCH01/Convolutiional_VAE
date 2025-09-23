@@ -1,10 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-from tqdm.notebook import tqdm
-from torch import Tensor
 
 class Unflatten(nn.Module):
     def __init__(self, channels=256, height=16, width=16):
