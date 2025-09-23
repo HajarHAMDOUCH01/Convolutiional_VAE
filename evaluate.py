@@ -9,27 +9,18 @@ from torchvision import transforms
 from PIL import Image
 
 class VAEEvaluator:
-    """
-    Comprehensive evaluation metrics for VAE models
-    Baby step enhancement - easy to implement, big impact!
-    """
     
     def __init__(self, model, device=None):
         self.model = model
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.eval()
         
-        # Load pretrained Inception for FID calculation
         self.inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
         self.inception_model.eval()
         
-    def reconstruction_metrics(self, real_images, num_samples=100):
-        """
-        Calculate reconstruction quality metrics
-        """
+    def reconstruction_metrics(self, real_images, num_samples=500):
         print(f"📊 Calculating reconstruction metrics on {num_samples} samples...")
         
-        # Select random subset
         indices = torch.randperm(len(real_images))[:num_samples]
         sample_images = real_images[indices].to(self.device)
         
