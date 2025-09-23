@@ -117,7 +117,7 @@ def train_vae():
         print(f"Epoch {epoch+1} Complete - Avg Loss: {avg_loss:.4f}, "
               f"BCE: {avg_bce:.4f}, KLD: {avg_kld:.4f}")
         
-        if (epoch + 1) % 20:
+        if (epoch + 1) % 20 == 0:
           beta = min(beta + 0.1 , 1.0)
 
         # cleaning memory after each epoch
