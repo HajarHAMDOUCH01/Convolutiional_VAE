@@ -56,27 +56,27 @@ class VGG19(nn.Module):
         # x : image 
         
         h_conv_3_2 = self.slice1(x)
-        h_conv_4_2 = self.slice4(h_conv_3_2)
+        h_conv_4_2 = self.slice2(h_conv_3_2)
 
         return [h_conv_3_2, h_conv_4_2]
     
 def perceptual_loss_cvae(vgg19_model, recon_x, x):
-    loss_layers_indices = [0,1,2,3,4]
-    loss_layers_weights = [0.1, 0.2, 0.4, 0.8, 1.0]
+    loss_layers_indices = [0,1]
+    # loss_layers_weights = [0.1, 0.2, 0.4, 0.8, 1.0]
     total_reconstruction_loss = 0.0
 
     with torch.no_grad():
         x_features = vgg19_model.forward(x)
         recon_x_features = vgg19_model.forward(recon_x)
 
-    for layer, layer_weight in zip(loss_layers_indices, loss_layers_weights):
+    for layer in loss_layers_indices:
         _,c,h,w = x_features[layer].shape
         x_layer_features_normalized = torch.div(x_features[layer],c*h*w)
         x_layer_recon_x_features_normalized = torch.div(recon_x_features[layer],c*h*w)
         x_layer_features_normalized.to(device)
         x_layer_recon_x_features_normalized.to(device)
         layer_loss = F.mse_loss(x_layer_features_normalized, x_layer_recon_x_features_normalized, reduction='mean')
-        total_reconstruction_loss += layer_weight * layer_loss
+        total_reconstruction_loss +=  layer_loss
     
     return total_reconstruction_loss
 
