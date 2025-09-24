@@ -60,7 +60,7 @@ class VGG19(nn.Module):
             self.slice4.add_module(str(x), vgg_features[x])
         # conv_5_2
         for x in range(21, 29):
-            self.slice4.add_module(str(x), vgg_features[x])
+            self.slice5.add_module(str(x), vgg_features[x])
             
         for param in self.parameters():
             param.requires_grad = False
@@ -72,7 +72,7 @@ class VGG19(nn.Module):
         h_conv_2_2 = self.slice2(h_conv_1_2)
         h_conv_3_2 = self.slice3(h_conv_2_2)
         h_conv_4_2 = self.slice4(h_conv_3_2)
-        h_conv_5_2 = self.slice4(h_conv_4_2)
+        h_conv_5_2 = self.slice5(h_conv_4_2)
 
         return [h_conv_1_2, h_conv_2_2, h_conv_3_2, h_conv_4_2, h_conv_5_2]
     
