@@ -88,7 +88,7 @@ def perceptual_loss_cvae(recon_x, x):
         x_features = vgg19_model.forward(x)
         recon_x_features = vgg19_model.forward(recon_x)
 
-    for layer, layer_weight in range(zip(loss_layers_indices, loss_layers_weights)):
+    for layer, layer_weight in zip(loss_layers_indices, loss_layers_weights):
         c,h,w = x_features[layer].shape
         x_layer_features_normalized = torch.div(x_features[layer],c*h*w)
         x_layer_recon_x_features_normalized = torch.div(recon_x_features[layer],c*h*w)
