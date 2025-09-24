@@ -12,6 +12,7 @@ sys.path.append("/content/Convolutiional_VAE")
 
 from vae_model import ConvolutionnalVAE
 from dataset import FacesDataset
+from losses import perceptual_loss_cvae, cvae_loss
 
 root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -23,14 +24,6 @@ def get_transforms():
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ])
-
-def vae_loss(recon_x, x, mu, log_var, beta=1.0):
-    BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='mean')
-    
-    # KL Divergence loss
-    KLD = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
-    
-    return BCE + beta * KLD, BCE, KLD
 
 def clear_memory():
     if torch.cuda.is_available():
@@ -83,7 +76,7 @@ def train_vae():
             
             optimizer.zero_grad()
             recon_imgs, mu, logvar = model(real_images)            
-            loss, bce_loss, kld_loss = vae_loss(recon_imgs, real_images, mu, logvar, beta)
+            loss, bce_loss, kld_loss = perceptual_loss_cvae(recon_imgs, real_images, mu, logvar, beta)
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)

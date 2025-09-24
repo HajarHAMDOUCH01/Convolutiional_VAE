@@ -9,11 +9,9 @@ import sys
 sys.path.append("/content/Convolutiional_VAE")
 from vae_model import ConvolutionnalVAE
 
-checkpoint = torch.load('/content/vae_checkpoint_epoch_100.pth', map_location="cpu")  # Your 100/300 checkpoint
-
-# Create model instance with same parameters
-z_dim = 256  # Use whatever z_dim you trained with
-model = ConvolutionnalVAE(z_dim=z_dim, input_size=256)  # Adjust based on your training
+checkpoint = torch.load('/content/vae_checkpoint_epoch_100.pth', map_location="cpu") 
+z_dim = 256  
+model = ConvolutionnalVAE(z_dim=z_dim, input_size=256) 
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()  
 image_face1 = "/content/face1.jpg"
@@ -34,7 +32,6 @@ def generate_new_face(z_dim, model):
     to_pil = ToPILImage()
     image = to_pil(generated_face.squeeze(0))  
 
-    # Save with PIL
     image.save('generated_face_pil.png')
 
 def interpolate_2_faces(model, face1, face2, alpha=0.5):
