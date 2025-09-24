@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def cvae_loss(recon_x, x, mu, log_var, beta=1.0):
     BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='mean')
     
@@ -72,10 +72,14 @@ class VGG19(nn.Module):
 def perceptual_loss_cvae(recon_x, x, mu, log_var, beta=1.0):
     total_reconstruction_loss = 0.0
     vgg19_model = VGG19()
+    vgg19_model.to(device)
     vgg19_model.eval()
-    x_features = vgg19_model.forward(x)
-    recon_x_features = vgg19_model.forward(recon_x)
 
+    with torch.no_grad():
+        x_features.to(device)
+        recon_x_features.to(device)
+        x_features = vgg19_model.forward(x)
+        recon_x_features = vgg19_model.forward(recon_x)
 
     for layer in range(4):
         layer_loss = F.mse_loss(x_features[layer], recon_x_features[layer], reduction='mean')

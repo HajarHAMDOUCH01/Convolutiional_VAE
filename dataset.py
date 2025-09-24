@@ -12,7 +12,7 @@ class FacesDataset(torch.utils.data.Dataset):
         
         for root_dir, dirs, files in os.walk(root):
             for file in files:
-                if file.lower().endswith(('.png', '.jpg', '.jpeg')) and len(self.images) < 5000:
+                if file.lower().endswith(('.png', '.jpg', '.jpeg')) and len(self.images) < 50000:
                     self.images.append(os.path.join(root_dir, file))
         
         print(f"Found {len(self.images)} images in dataset")

@@ -116,7 +116,7 @@ def train_vae():
         # cleaning memory after each epoch
         clear_memory()
         
-        if (epoch + 1) % 100 == 0:
+        if (epoch + 1) % 10 == 0:
             checkpoint = {
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
