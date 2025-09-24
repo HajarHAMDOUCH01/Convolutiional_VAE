@@ -3,13 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-def cvae_loss(recon_x, x, mu, log_var, beta=1.0):
+def cvae_loss(recon_x, x):
     BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='mean')
     
+    return BCE
+
+def KLdivergence_loss(mu, log_var, beta=0.5):
     # KL Divergence loss
     KLD = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
-    
-    return BCE + beta * KLD, BCE, KLD
+    return KLD
 
 
 VGG19_LAYERS = (
@@ -42,18 +44,22 @@ class VGG19(nn.Module):
         self.slice2 = nn.Sequential()
         self.slice3 = nn.Sequential()
         self.slice4 = nn.Sequential()
+        self.slice5 = nn.Sequential()
         
-        # relu1_2 
-        for x in range(4):
+        # conv_1_2 
+        for x in range(3):
             self.slice1.add_module(str(x), vgg_features[x])
-        # relu_2_2 
-        for x in range(4,9):
+        # conv_2_2 
+        for x in range(3,8):
             self.slice2.add_module(str(x), vgg_features[x])
-        # relu3_3
-        for x in range(9, 16):
+        # conv_3_2
+        for x in range(8, 13):
             self.slice3.add_module(str(x), vgg_features[x])
-        # relu4_3 
-        for x in range(16, 25):
+        # conv_4_2
+        for x in range(13, 21):
+            self.slice4.add_module(str(x), vgg_features[x])
+        # conv_5_2
+        for x in range(21, 29):
             self.slice4.add_module(str(x), vgg_features[x])
             
         for param in self.parameters():
@@ -62,14 +68,17 @@ class VGG19(nn.Module):
     def forward(self, x):
         # x : image 
         
-        h_relu1_2 = self.slice1(x)
-        h_relu2_2 = self.slice2(h_relu1_2)
-        h_relu3_3 = self.slice3(h_relu2_2)
-        h_relu4_3 = self.slice4(h_relu3_3)
-        
-        return [h_relu1_2, h_relu2_2, h_relu3_3, h_relu4_3]
+        h_conv_1_2 = self.slice1(x)
+        h_conv_2_2 = self.slice2(h_conv_1_2)
+        h_conv_3_2 = self.slice3(h_conv_2_2)
+        h_conv_4_2 = self.slice4(h_conv_3_2)
+        h_conv_5_2 = self.slice4(h_conv_4_2)
+
+        return [h_conv_1_2, h_conv_2_2, h_conv_3_2, h_conv_4_2, h_conv_5_2]
     
-def perceptual_loss_cvae(recon_x, x, mu, log_var, beta=1.0):
+def perceptual_loss_cvae(recon_x, x):
+    loss_layers_indices = [0,1,2,3,4]
+    loss_layers_weights = [0.1, 0.2, 0.4, 0.8, 1.0]
     total_reconstruction_loss = 0.0
     vgg19_model = VGG19()
     vgg19_model.to(device)
@@ -79,14 +88,23 @@ def perceptual_loss_cvae(recon_x, x, mu, log_var, beta=1.0):
         x_features = vgg19_model.forward(x)
         recon_x_features = vgg19_model.forward(recon_x)
 
-    for layer in range(4):
-        x_features[layer].to(device)
-        recon_x_features[layer].to(device)
+    for layer, layer_weight in range(zip(loss_layers_indices, loss_layers_weights)):
+        c,h,w = x_features[layer].shape
+        x_layer_features_normalized = torch.div(x_features[layer],c*h*w)
+        x_layer_recon_x_features_normalized = torch.div(recon_x_features[layer],c*h*w)
+        x_layer_features_normalized.to(device)
+        x_layer_recon_x_features_normalized.to(device)
         layer_loss = F.mse_loss(x_features[layer], recon_x_features[layer], reduction='mean')
-        total_reconstruction_loss += layer_loss
+        total_reconstruction_loss += layer_weight * layer_loss
     
-    KLD = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
-    
-    return total_reconstruction_loss + beta * KLD, total_reconstruction_loss , KLD
+    return total_reconstruction_loss
+
+def total_loss(recon_x, x, mu, log_var, beta, mae_weight=1.0 , percep_weight=0.5):
+    percep_loss = percep_weight * perceptual_loss_cvae(recon_x, x)
+    mae_loss = mae_weight * cvae_loss(recon_x, x)
+    KLD_loss = KLdivergence_loss(mu, log_var, beta)
+
+    return percep_loss + mae_loss + KLD_loss, KLD_loss, percep_loss
+
     
     
