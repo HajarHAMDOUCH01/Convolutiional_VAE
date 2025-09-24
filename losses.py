@@ -76,10 +76,10 @@ def perceptual_loss_cvae(recon_x, x, mu, log_var, beta=1.0):
     vgg19_model.eval()
 
     with torch.no_grad():
-        x_features.to(device)
-        recon_x_features.to(device)
         x_features = vgg19_model.forward(x)
         recon_x_features = vgg19_model.forward(recon_x)
+        x_features.to(device)
+        recon_x_features.to(device)
 
     for layer in range(4):
         layer_loss = F.mse_loss(x_features[layer], recon_x_features[layer], reduction='mean')
