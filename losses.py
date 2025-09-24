@@ -96,7 +96,7 @@ def cvae_total_loss(vgg19_model, recon_x, x, mu, log_var, beta, mae_weight=1.0 ,
     else:
         recon_loss = mae_loss
 
-    return recon_loss + KLD_loss, KLD_loss, recon_loss
+    return recon_loss + beta*KLD_loss, beta*KLD_loss, recon_loss
 
     
     
