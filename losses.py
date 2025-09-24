@@ -39,8 +39,8 @@ class VGG19(nn.Module):
 
         self.vgg_model_weights = VGG19_Weights
         
-        self.slice1 = nn.Sequential()
-        self.slice2 = nn.Sequential()
+        self.slice3 = nn.Sequential()
+        self.slice4 = nn.Sequential()
 
         # conv1_2
         self.slice1 = nn.Sequential(*[vgg_features[x] for x in range(0, 3)])  
