@@ -37,7 +37,7 @@ def train_vae():
 
     clear_memory()
     
-    z_dim = 256
+    z_dim = 512
     batch_size = 32
     lr = 5e-4
     num_epochs = 300
@@ -75,9 +75,12 @@ def train_vae():
             batch_size_actual = real_images.size(0)
             
             optimizer.zero_grad()
-            recon_imgs, mu, logvar = model(real_images)            
-            loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5)
-            
+            recon_imgs, mu, logvar = model(real_images)     
+
+            if epoch+1 == 5:
+                loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=False)
+            else:
+                loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
