@@ -82,9 +82,9 @@ def train_vae():
             recon_imgs, mu, logvar = model(real_images)     
 
             if epoch+1 <= 10:
-                loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=False)
+                loss, kld_loss, bce_loss = cvae_total_loss(vgg19_model, recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=False)
             else:
-                loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=True)
+                loss, kld_loss, bce_loss = cvae_total_loss(vgg19_model, recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
