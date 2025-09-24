@@ -18,10 +18,7 @@ class ConvolutionnalVAE(nn.Module):
         
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=4, stride=2, padding=1),  
-            nn.LayerNorm([16,128,128]),
-            nn.ReLU(),
-            nn.Conv2d(16, 32, kernel_size=4, stride=2, padding=1),   
+            nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1),  
             nn.LayerNorm([32,64,64]),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),   
