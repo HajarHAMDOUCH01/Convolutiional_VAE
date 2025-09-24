@@ -48,10 +48,10 @@ class VGG19(nn.Module):
         self.slice2 = nn.Sequential(*[vgg_features[x] for x in range(3, 8)])  
         # conv_3_2
         for x in range(8, 13):
-            self.slice1.add_module(str(x), vgg_features[x])
+            self.slice3.add_module(str(x), vgg_features[x])
         # conv_4_2
         for x in range(13, 21):
-            self.slice2.add_module(str(x), vgg_features[x])
+            self.slice4.add_module(str(x), vgg_features[x])
             
         for param in self.parameters():
             param.requires_grad = False
@@ -68,6 +68,7 @@ class VGG19(nn.Module):
     
 def perceptual_loss_cvae(vgg19_model, recon_x, x):
     loss_layers_indices = [0,1, 2, 3]
+    loss_layers_weighting  = [0.01,0.02,0.5,0.5]
     total_reconstruction_loss = 0.0
 
     with torch.no_grad():
