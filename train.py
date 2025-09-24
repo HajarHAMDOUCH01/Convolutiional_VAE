@@ -12,7 +12,7 @@ sys.path.append("/content/Convolutiional_VAE")
 
 from vae_model import ConvolutionnalVAE
 from dataset import FacesDataset
-from losses import perceptual_loss_cvae, cvae_loss, cvae_total_loss
+from losses import perceptual_loss_cvae, cvae_loss, cvae_total_loss, VGG19
 
 root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -21,7 +21,7 @@ print(f"using device : {device}")
 
 def get_transforms():
     return transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize((128, 128)),
         transforms.ToTensor(),
     ])
 
@@ -35,13 +35,17 @@ def train_vae():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
+    vgg19_model = VGG19()
+    vgg19_model.to(device)
+    vgg19_model.eval()
+
     clear_memory()
     
     z_dim = 256
     batch_size = 32
-    lr = 5e-4
+    lr = 1e-4
     num_epochs = 300
-    beta = 0.5
+    beta = 0.0
     
     root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
     transform = get_transforms()
@@ -54,7 +58,7 @@ def train_vae():
                             drop_last=True
                             )
     
-    model = ConvolutionnalVAE(image_channels=3, z_dim=z_dim, input_size=256).to(device)
+    model = ConvolutionnalVAE(image_channels=3, z_dim=z_dim, input_size=128).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
     model.train()
@@ -77,7 +81,7 @@ def train_vae():
             optimizer.zero_grad()
             recon_imgs, mu, logvar = model(real_images)     
 
-            if epoch+1 <= 20:
+            if epoch+1 <= 10:
                 loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=False)
             else:
                 loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=True)
@@ -113,7 +117,7 @@ def train_vae():
         print(f"Epoch {epoch+1} Complete - Avg Loss: {avg_loss:.4f}, "
               f"BCE: {avg_bce:.4f}, KLD: {avg_kld:.4f}")
         
-        if (epoch + 1) % 20 == 0:
+        if (epoch + 1) % 10 == 0:
           beta = min(beta + 0.1 , 1.0)
 
         # cleaning memory after each epoch

@@ -41,25 +41,13 @@ class VGG19(nn.Module):
         
         self.slice1 = nn.Sequential()
         self.slice2 = nn.Sequential()
-        self.slice3 = nn.Sequential()
-        self.slice4 = nn.Sequential()
-        self.slice5 = nn.Sequential()
         
-        # conv_1_2 
-        for x in range(3):
-            self.slice1.add_module(str(x), vgg_features[x])
-        # conv_2_2 
-        for x in range(3,8):
-            self.slice2.add_module(str(x), vgg_features[x])
         # conv_3_2
         for x in range(8, 13):
-            self.slice3.add_module(str(x), vgg_features[x])
+            self.slice1.add_module(str(x), vgg_features[x])
         # conv_4_2
         for x in range(13, 21):
-            self.slice4.add_module(str(x), vgg_features[x])
-        # conv_5_2
-        for x in range(21, 29):
-            self.slice5.add_module(str(x), vgg_features[x])
+            self.slice2.add_module(str(x), vgg_features[x])
             
         for param in self.parameters():
             param.requires_grad = False
@@ -67,21 +55,15 @@ class VGG19(nn.Module):
     def forward(self, x):
         # x : image 
         
-        h_conv_1_2 = self.slice1(x)
-        h_conv_2_2 = self.slice2(h_conv_1_2)
-        h_conv_3_2 = self.slice3(h_conv_2_2)
+        h_conv_3_2 = self.slice1(x)
         h_conv_4_2 = self.slice4(h_conv_3_2)
-        h_conv_5_2 = self.slice5(h_conv_4_2)
 
-        return [h_conv_1_2, h_conv_2_2, h_conv_3_2, h_conv_4_2, h_conv_5_2]
+        return [h_conv_3_2, h_conv_4_2]
     
-def perceptual_loss_cvae(recon_x, x):
+def perceptual_loss_cvae(vgg19_model, recon_x, x):
     loss_layers_indices = [0,1,2,3,4]
     loss_layers_weights = [0.1, 0.2, 0.4, 0.8, 1.0]
     total_reconstruction_loss = 0.0
-    vgg19_model = VGG19()
-    vgg19_model.to(device)
-    vgg19_model.eval()
 
     with torch.no_grad():
         x_features = vgg19_model.forward(x)
@@ -93,7 +75,7 @@ def perceptual_loss_cvae(recon_x, x):
         x_layer_recon_x_features_normalized = torch.div(recon_x_features[layer],c*h*w)
         x_layer_features_normalized.to(device)
         x_layer_recon_x_features_normalized.to(device)
-        layer_loss = F.mse_loss(x_features[layer], recon_x_features[layer], reduction='mean')
+        layer_loss = F.mse_loss(x_layer_features_normalized, x_layer_recon_x_features_normalized, reduction='mean')
         total_reconstruction_loss += layer_weight * layer_loss
     
     return total_reconstruction_loss

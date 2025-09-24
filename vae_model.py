@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class Unflatten(nn.Module):
-    def __init__(self, channels=256, height=16, width=16):
+    def __init__(self, channels=128, height=16, width=16):
         super(Unflatten, self).__init__()
         self.channels = channels
         self.height = height
@@ -14,21 +14,21 @@ class Unflatten(nn.Module):
 class ConvolutionnalVAE(nn.Module):
     def __init__(self, image_channels=3, z_dim=32, input_size=128):
         super(ConvolutionnalVAE, self).__init__()
-        self.h_dim = 256 * 16 * 16  # 65536
+        self.h_dim = 128 * 16 * 16
         
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1),  # 256->128
-            nn.LayerNorm([32,128,128]),
+            nn.Conv2d(3, 16, kernel_size=4, stride=2, padding=1),  
+            nn.LayerNorm([16,128,128]),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),   # 128->64
-            nn.LayerNorm([64,64,64]),
+            nn.Conv2d(16, 32, kernel_size=4, stride=2, padding=1),   
+            nn.LayerNorm([32,64,64]),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),    # 64->32
-            nn.LayerNorm([128,32,32]),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),   
+            nn.LayerNorm([64,32,32]),
             nn.ReLU(),
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),    # 32->16
-            nn.LayerNorm([256,16,16]),
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),   
+            nn.LayerNorm([128,16,16]),
             nn.ReLU(),
             nn.Flatten()
         )
@@ -41,17 +41,14 @@ class ConvolutionnalVAE(nn.Module):
         
         # Decoder
         self.decoder = nn.Sequential(
-            Unflatten(channels=256, height=16, width=16),
-            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),  # 16->32
-            nn.LayerNorm([128,32,32]),
+            Unflatten(channels=128, height=16, width=16),
+            nn.ConvTranspose2d(128, 32, kernel_size=4, stride=2, padding=1),  
+            nn.LayerNorm([32,32,32]),
             nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),   # 32->64
-            nn.LayerNorm([64,64,64]),
+            nn.ConvTranspose2d(32, 16, kernel_size=4, stride=2, padding=1),    
+            nn.LayerNorm([16,64,64]),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),    # 64->128
-            nn.LayerNorm([32,128,128]),
-            nn.ReLU(),
-            nn.ConvTranspose2d(32, 3, kernel_size=4, stride=2, padding=1),    # 128->256
+            nn.ConvTranspose2d(16, 3, kernel_size=4, stride=2, padding=1),   
         )
     
     def reparametrize(self, mu, log_var):
