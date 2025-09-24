@@ -8,7 +8,7 @@ def cvae_loss(recon_x, x):
     
     return BCE
 
-def KLdivergence_loss(mu, log_var, beta=0.5):
+def KLdivergence_loss(mu, log_var):
     # KL Divergence loss
     KLD = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
     return KLD
@@ -30,7 +30,7 @@ VGG19_LAYERS = (
 )
 
 class VGG19(nn.Module):
-    """VGG19 features for perceptual losses"""
+    """VGG19 features for perceptual loss"""
     def __init__(self):
         super(VGG19, self).__init__()
 
@@ -39,7 +39,6 @@ class VGG19(nn.Module):
 
         self.vgg_model_weights = VGG19_Weights
         
-        # Extraction of specific layers for content and style losses
         self.slice1 = nn.Sequential()
         self.slice2 = nn.Sequential()
         self.slice3 = nn.Sequential()
@@ -89,7 +88,7 @@ def perceptual_loss_cvae(recon_x, x):
         recon_x_features = vgg19_model.forward(recon_x)
 
     for layer, layer_weight in zip(loss_layers_indices, loss_layers_weights):
-        c,h,w = x_features[layer].shape
+        _,c,h,w = x_features[layer].shape
         x_layer_features_normalized = torch.div(x_features[layer],c*h*w)
         x_layer_recon_x_features_normalized = torch.div(recon_x_features[layer],c*h*w)
         x_layer_features_normalized.to(device)

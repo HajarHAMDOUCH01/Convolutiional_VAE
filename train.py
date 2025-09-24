@@ -37,7 +37,7 @@ def train_vae():
 
     clear_memory()
     
-    z_dim = 512
+    z_dim = 256
     batch_size = 32
     lr = 5e-4
     num_epochs = 300
@@ -77,7 +77,7 @@ def train_vae():
             optimizer.zero_grad()
             recon_imgs, mu, logvar = model(real_images)     
 
-            if epoch+1 == 5:
+            if epoch+1 <= 20:
                 loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=False)
             else:
                 loss, kld_loss, bce_loss = cvae_total_loss(recon_imgs, real_images, mu, logvar, beta, mae_weight=1.0, percep_weight=0.5, use_percep=True)
