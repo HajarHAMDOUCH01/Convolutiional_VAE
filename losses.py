@@ -89,7 +89,7 @@ def perceptual_loss_cvae(vgg19_model, recon_x, x):
 def cvae_total_loss(vgg19_model, recon_x, x, mu, log_var, beta, mae_weight=1.0 , percep_weight=0.5, use_percep=False):
     percep_loss = percep_weight * perceptual_loss_cvae(vgg19_model, recon_x, x)
     mae_loss = mae_weight * cvae_loss(recon_x, x)
-    KLD_loss = KLdivergence_loss(mu, log_var, beta)
+    KLD_loss = KLdivergence_loss(mu, log_var)
 
     if use_percep:
         recon_loss = mae_loss+percep_loss
