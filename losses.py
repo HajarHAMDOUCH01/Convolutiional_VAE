@@ -62,25 +62,18 @@ class VGG19(nn.Module):
         return [h_conv_1_2, h_conv_2_2, h_conv_3_2, h_conv_4_2]
     
 def perceptual_loss_cvae(vgg19_model, recon_x, x):
-    """
-    Fixed perceptual loss with proper gradient flow
-    """
     loss_layers_indices = [0, 1, 2, 3]
-    loss_layers_weighting = [0.01, 0.02, 0.5, 0.5]
+    loss_layers_weighting =[0.01, 0.02, 0.5, 0.5]
     total_reconstruction_loss = 0.0
 
-    # FIXED: Remove torch.no_grad() to allow gradients to flow
-    # Compute features for original images (can be done without gradients)
     with torch.no_grad():
         x_features = vgg19_model.forward(x)
     
-    # Compute features for reconstructed images (MUST have gradients)
     recon_x_features = vgg19_model.forward(recon_x)
 
     for layer in loss_layers_indices:
         _, c, h, w = x_features[layer].shape
         
-        # FIXED: Proper device handling and normalization
         x_layer_features_normalized = x_features[layer] / (c * h * w)
         recon_x_layer_features_normalized = recon_x_features[layer] / (c * h * w)
         
