@@ -6,7 +6,7 @@ A PyTorch implementation of a Convolutional Variational Autoencoder for image ge
 
 # Generating a face from sampling from the latent space 
 
-![image alt]()
+![image alt](https://github.com/HajarHAMDOUCH01/Convolutiional_VAE/blob/7d5bd27816848aca9a0db128e8ec902dbd36c0fb/generated_face.png)
 
 ## Features
 
