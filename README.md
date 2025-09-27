@@ -1,8 +1,12 @@
-# Convolutional Variational Autoencoder (CVAE)
+# Convolutional Variational Autoencoder
 
-![image alt]()
+![image alt](https://github.com/HajarHAMDOUCH01/Convolutiional_VAE/blob/b4df023fbd80e64d0728bcea3238f3c094c4f1d6/VAE.png)
 
 A PyTorch implementation of a Convolutional Variational Autoencoder for image generation and reconstruction, specifically designed for face datasets.
+
+# Generating a face from sampling from the latent space 
+
+![image alt](https://github.com/HajarHAMDOUCH01/Convolutiional_VAE/blob/7d5bd27816848aca9a0db128e8ec902dbd36c0fb/generated_face.png)
 
 ## Features
 
@@ -16,7 +20,7 @@ A PyTorch implementation of a Convolutional Variational Autoencoder for image ge
 
 - **Input**: 128×128 RGB images
 - **Encoder**: 3 convolutional blocks (32→64→128 channels) with LayerNorm
-- **Latent Space**: 32-dimensional latent vector
+- **Latent Space**: 256-dimensional latent vector
 - **Decoder**: 3 transposed convolutional blocks with skip connections
 
 ## Loss Components
@@ -28,15 +32,8 @@ A PyTorch implementation of a Convolutional Variational Autoencoder for image ge
 ## Quick Start
 
 ```python
-from vae_model import ConvolutionnalVAE
-from training_config import training_config
-
-# Initialize model
-model = ConvolutionnalVAE(
-    image_channels=3, 
-    z_dim=32, 
-    input_size=128
-)
+git clone https://github.com/HajarHAMDOUCH01/Convolutiional_VAE
+pip install -r requirements.txt
 
 # Train model
 python train_vae.py
@@ -44,33 +41,9 @@ python train_vae.py
 
 ## Training Configuration
 
-Key parameters in `training_config`:
-- `batch_size`: 32
+Key parameters in `training_config.py`:
+- `batch_size`: 64
 - `lr`: 1e-4
-- `num_epochs`: 100
-- `beta`: KL weight (starts at 0.8, increases every 10 epochs)
-- `z_dim`: Latent dimension (32)
-
-## Requirements
-
-- PyTorch >= 1.9
-- torchvision
-- matplotlib
-- tqdm
-
-## File Structure
-
-```
-├── vae_model.py      # Model architecture
-├── losses.py        # Loss functions and VGG19 implementation
-├── train_vae.py     # Training script
-├── dataset.py       # Dataset loading utilities
-└── training_config.py  # Configuration parameters
-```
-
-## Features
-
-- **Progressive Training**: Perceptual loss introduced after initial epochs
-- **Gradient Clipping**: Prevents gradient explosion
-- **Automatic Checkpointing**: Saves model every 10 epochs
-- **Training Visualization**: Loss curves and sample outputs
+- `num_epochs`: 300
+- `beta`: KL weight (starts at 0.0, increases every 10 epochs => maximum 1.0)
+- `z_dim`: Latent dimension (256)
