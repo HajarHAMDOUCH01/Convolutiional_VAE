@@ -6,6 +6,7 @@ from torchvision import transforms
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import gc
+import os
 
 import sys 
 sys.path.append("/content/Convolutiional_VAE")
@@ -13,15 +14,17 @@ sys.path.append("/content/Convolutiional_VAE")
 from vae_model import ConvolutionnalVAE
 from dataset import FacesDataset
 from losses import perceptual_loss_cvae, cvae_loss, cvae_total_loss, VGG19
+from training_config import training_config
 
-root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
+
+dataset_path = training_config["dataset_path"]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"using device : {device}")
 
 
 def get_transforms():
     return transforms.Compose([
-        transforms.Resize((128, 128)),
+        transforms.Resize((training_config["image_input_size"], training_config["image_input_size"])),
         transforms.ToTensor(),
     ])
 
@@ -31,7 +34,27 @@ def clear_memory():
         torch.cuda.synchronize()
     gc.collect()
 
-def train_vae():
+model = ConvolutionnalVAE(image_channels=3, z_dim=training_config["z_dim"], input_size=training_config["image_input_size"]).to(device)
+optimizer = optim.Adam(model.parameters(), lr=training_config["lr"])
+
+model.train()
+
+def load_model_from_checkpoint(checkpoint_path, lr, total_epochs, model, optimizer):
+    print(f"Loading checkpoint from: {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    start_epoch = checkpoint['epoch'] +1
+
+    beta = 1.0
+    
+    print(f"Load checkpoint from iteration {start_epoch}")
+
+    return model, optimizer, start_epoch, beta
+
+def train_vae(model, dataset_path, checkpoint_path=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
@@ -41,15 +64,28 @@ def train_vae():
 
     clear_memory()
     
-    z_dim = 256
-    batch_size = 64
-    lr = 1e-4
-    num_epochs = 300
-    beta = 0.0
+    z_dim = training_config["z_dim"]
+    batch_size = training_config["batch_size"]
+    lr =  training_config["lr"]
+    num_epochs = training_config["num_epochs"]
+    beta = training_config["beta"]
     
-    root = "/kaggle/input/celeba-dataset/img_align_celeba/img_align_celeba"
+    start_epoch = 0
+    epoch_losses = []
+    epoch_bce_losses = []
+    epoch_kld_losses = []
+
+    if checkpoint_path and os.path.exists(checkpoint_path):
+        model, optimizer, start_epoch, beta = load_model_from_checkpoint(checkpoint_path, model, optimizer)
+        print(f"Resuming training from epoch {start_epoch}")
+    else:
+        if checkpoint_path:
+            print(f"Checkpoint file {checkpoint_path} not found. Starting fresh training.")
+        print("Starting training from scratch")
+
+
     transform = get_transforms()
-    faces_dataset = FacesDataset(root=root, transform=transform)
+    faces_dataset = FacesDataset(root=dataset_path, transform=transform)
     dataloader = DataLoader(faces_dataset, 
                             batch_size=batch_size, 
                             shuffle=True,
@@ -57,14 +93,6 @@ def train_vae():
                             pin_memory=False,
                             drop_last=True
                             )
-    
-    model = ConvolutionnalVAE(image_channels=3, z_dim=z_dim, input_size=128).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    
-    model.train()
-    epoch_losses = []
-    epoch_bce_losses = []
-    epoch_kld_losses = []
     
     for epoch in range(num_epochs):
         total_loss = 0
@@ -128,17 +156,18 @@ def train_vae():
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
+                'beta' : beta
             }
-            torch.save(checkpoint, f'/content/drive/MyDrive/vae_checkpoint_epoch_{epoch+1}.pth')
-            torch.save(model, f'/content/drive/MyDrive/vae_model_epoch_{epoch+1}.bin')
+            torch.save(checkpoint, f'{training_config["save_dir"]}/vae_checkpoint_epoch_{epoch+1}.pth')
+            torch.save(model, f'tarining_config["save_dir"]/vae_model_epoch_{epoch+1}.bin')
             print(f"Checkpoint saved at epoch {epoch+1}")
     
     del checkpoint
     clear_memory()
     
     print("Training complete! Saving final model...")
-    torch.save(model.state_dict(), '/content/drive/MyDrive/vae_final_model.pth')
-    torch.save(model, '/content/drive/MyDrive/vae_final_model.bin')
+    torch.save(model.state_dict(), 'tarining_config["save_dir"]/vae_final_model.pth')
+    torch.save(model, 'tarining_config["save_dir"]/vae_final_model.bin')
 
     plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses)
 
@@ -171,7 +200,7 @@ def plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses):
     plt.legend()
     
     plt.tight_layout()
-    plt.savefig('/content/drive/MyDrive/training_curves.png', dpi=150, bbox_inches='tight')
+    plt.savefig('tarining_config["save_dir"]/training_curves.png', dpi=150, bbox_inches='tight')
     plt.show()
     plt.close()
     
