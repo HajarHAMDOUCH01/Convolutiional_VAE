@@ -17,6 +17,7 @@ from losses import perceptual_loss_cvae, cvae_loss, cvae_total_loss, VGG19
 from training_config import training_config
 
 
+checkpoint_path = "/content/drive/MyDrive/vae_checkpoint_epoch_80.pth"
 dataset_path = training_config["dataset_path"]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"using device : {device}")
@@ -39,22 +40,28 @@ optimizer = optim.Adam(model.parameters(), lr=training_config["lr"])
 
 model.train()
 
-def load_model_from_checkpoint(checkpoint_path, lr, total_epochs, model, optimizer):
+def load_model_from_checkpoint(checkpoint_path, model, optimizer):
     print(f"Loading checkpoint from: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-    start_epoch = checkpoint['epoch'] +1
+    start_epoch = checkpoint['epoch'] + 1
 
-    beta = 1.0
+    if 'beta' in checkpoint:
+        beta = checkpoint['beta']
+    else:
+        beta = 0.8
+        # beta = min(training_config["beta"] + (checkpoint['epoch'] // 10) * 0.1, 1.0)
     
-    print(f"Load checkpoint from iteration {start_epoch}")
+    print(f"Loaded checkpoint from epoch {checkpoint['epoch']}")
+    print(f"Will resume training from epoch {start_epoch}")
+    print(f"Current beta: {beta}")
 
     return model, optimizer, start_epoch, beta
 
-def train_vae(model, dataset_path, checkpoint_path=None):
+def train_vae(model, optimizer, dataset_path, checkpoint_path=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
@@ -66,7 +73,7 @@ def train_vae(model, dataset_path, checkpoint_path=None):
     
     z_dim = training_config["z_dim"]
     batch_size = training_config["batch_size"]
-    lr =  training_config["lr"]
+    lr = training_config["lr"]
     num_epochs = training_config["num_epochs"]
     beta = training_config["beta"]
     
@@ -83,7 +90,6 @@ def train_vae(model, dataset_path, checkpoint_path=None):
             print(f"Checkpoint file {checkpoint_path} not found. Starting fresh training.")
         print("Starting training from scratch")
 
-
     transform = get_transforms()
     faces_dataset = FacesDataset(root=dataset_path, transform=transform)
     dataloader = DataLoader(faces_dataset, 
@@ -94,7 +100,7 @@ def train_vae(model, dataset_path, checkpoint_path=None):
                             drop_last=True
                             )
     
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         total_loss = 0
         total_bce = 0
         total_kld = 0
@@ -146,7 +152,7 @@ def train_vae(model, dataset_path, checkpoint_path=None):
               f"BCE: {avg_bce:.4f}, KLD: {avg_kld:.4f}")
         
         if (epoch + 1) % 10 == 0:
-          beta = min(beta + 0.1 , 1.0)
+            beta = min(beta + 0.1, 1.0)
 
         # cleaning memory after each epoch
         clear_memory()
@@ -156,18 +162,17 @@ def train_vae(model, dataset_path, checkpoint_path=None):
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'beta' : beta
+                'beta': beta
             }
             torch.save(checkpoint, f'{training_config["save_dir"]}/vae_checkpoint_epoch_{epoch+1}.pth')
-            torch.save(model, f'tarining_config["save_dir"]/vae_model_epoch_{epoch+1}.bin')
+            torch.save(model, f'{training_config["save_dir"]}/vae_model_epoch_{epoch+1}.bin')
             print(f"Checkpoint saved at epoch {epoch+1}")
     
-    del checkpoint
     clear_memory()
     
     print("Training complete! Saving final model...")
-    torch.save(model.state_dict(), 'tarining_config["save_dir"]/vae_final_model.pth')
-    torch.save(model, 'tarining_config["save_dir"]/vae_final_model.bin')
+    torch.save(model.state_dict(), f'{training_config["save_dir"]}/vae_final_model.pth')
+    torch.save(model, f'{training_config["save_dir"]}/vae_final_model.bin')
 
     plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses)
 
@@ -200,10 +205,10 @@ def plot_training_curves(epoch_losses, epoch_bce_losses, epoch_kld_losses):
     plt.legend()
     
     plt.tight_layout()
-    plt.savefig('tarining_config["save_dir"]/training_curves.png', dpi=150, bbox_inches='tight')
+    plt.savefig(f'{training_config["save_dir"]}/training_curves.png', dpi=150, bbox_inches='tight')
     plt.show()
     plt.close()
     
 
-if __name__=="__main__":
-  model , losses = train_vae()
+if __name__ == "__main__":
+    model, losses = train_vae(model, optimizer, dataset_path, checkpoint_path)
