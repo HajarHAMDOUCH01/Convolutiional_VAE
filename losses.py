@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def cvae_loss(recon_x, x):
     BCE = nn.functional.binary_cross_entropy(recon_x, x, reduction='mean')
-    
     return BCE
 
 def KLdivergence_loss(mu, log_var):
@@ -16,15 +16,11 @@ def KLdivergence_loss(mu, log_var):
 
 VGG19_LAYERS = (
     'conv1_1', 'relu1_1', 'conv1_2', 'relu1_2', 'pool1',
-
     'conv2_1', 'relu2_1', 'conv2_2', 'relu2_2', 'pool2',
-
     'conv3_1', 'relu3_1', 'conv3_2', 'relu3_2', 'conv3_3',
     'relu3_3', 'conv3_4', 'relu3_4', 'pool3',
-
     'conv4_1', 'relu4_1', 'conv4_2', 'relu4_2', 'conv4_3',
     'relu4_3', 'conv4_4', 'relu4_4', 'pool4',
-
     'conv5_1', 'relu5_1', 'conv5_2', 'relu5_2', 'conv5_3',
     'relu5_3', 'conv5_4', 'relu5_4'
 )
@@ -58,7 +54,6 @@ class VGG19(nn.Module):
             
     def forward(self, x):
         # x : image 
-        
         h_conv_1_2 = self.slice1(x)
         h_conv_2_2 = self.slice2(h_conv_1_2)
         h_conv_3_2 = self.slice3(h_conv_2_2)
@@ -67,36 +62,52 @@ class VGG19(nn.Module):
         return [h_conv_1_2, h_conv_2_2, h_conv_3_2, h_conv_4_2]
     
 def perceptual_loss_cvae(vgg19_model, recon_x, x):
-    loss_layers_indices = [0,1, 2, 3]
-    loss_layers_weighting  = [0.01,0.02,0.5,0.5]
+    """
+    Fixed perceptual loss with proper gradient flow
+    """
+    loss_layers_indices = [0, 1, 2, 3]
+    loss_layers_weighting = [0.01, 0.02, 0.5, 0.5]
     total_reconstruction_loss = 0.0
 
+    # FIXED: Remove torch.no_grad() to allow gradients to flow
+    # Compute features for original images (can be done without gradients)
     with torch.no_grad():
         x_features = vgg19_model.forward(x)
-        recon_x_features = vgg19_model.forward(recon_x)
+    
+    # Compute features for reconstructed images (MUST have gradients)
+    recon_x_features = vgg19_model.forward(recon_x)
 
     for layer in loss_layers_indices:
-        _,c,h,w = x_features[layer].shape
-        x_layer_features_normalized = torch.div(x_features[layer],c*h*w)
-        x_layer_recon_x_features_normalized = torch.div(recon_x_features[layer],c*h*w)
-        x_layer_features_normalized.to(device)
-        x_layer_recon_x_features_normalized.to(device)
-        layer_loss = F.mse_loss(x_layer_features_normalized, x_layer_recon_x_features_normalized, reduction='sum')
-        total_reconstruction_loss +=  layer_loss
+        _, c, h, w = x_features[layer].shape
+        
+        # FIXED: Proper device handling and normalization
+        x_layer_features_normalized = x_features[layer] / (c * h * w)
+        recon_x_layer_features_normalized = recon_x_features[layer] / (c * h * w)
+        
+        # Apply layer weighting
+        layer_weight = loss_layers_weighting[layer]
+        layer_loss = layer_weight * F.mse_loss(
+            recon_x_layer_features_normalized, 
+            x_layer_features_normalized, 
+            reduction='mean'
+        )
+        total_reconstruction_loss += layer_loss
     
     return total_reconstruction_loss
 
-def cvae_total_loss(vgg19_model, recon_x, x, mu, log_var, beta, mae_weight=1.0 , percep_weight=0.5, use_percep=False):
-    percep_loss = percep_weight * perceptual_loss_cvae(vgg19_model, recon_x, x)
+def cvae_total_loss(vgg19_model, recon_x, x, mu, log_var, beta, mae_weight=1.0, percep_weight=0.5, use_percep=False):
+    """
+    Total VAE loss with optional perceptual loss
+    """
     mae_loss = mae_weight * cvae_loss(recon_x, x)
     KLD_loss = KLdivergence_loss(mu, log_var)
 
     if use_percep:
-        recon_loss = mae_loss+percep_loss
+        percep_loss = percep_weight * perceptual_loss_cvae(vgg19_model, recon_x, x)
+        recon_loss = mae_loss + percep_loss
     else:
         recon_loss = mae_loss
 
-    return recon_loss + beta*KLD_loss, beta*KLD_loss, recon_loss
-
+    total_loss = recon_loss + beta * KLD_loss
     
-    
+    return total_loss, beta * KLD_loss, recon_loss
