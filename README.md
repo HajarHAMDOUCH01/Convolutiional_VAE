@@ -4,9 +4,12 @@
 
 A PyTorch implementation of a Convolutional Variational Autoencoder for image generation and reconstruction, specifically designed for face datasets.
 
-# Generating a face from sampling from the latent space 
+# Generating a face from sampling from the latent space (it suffers from mode collapse , it always generates a face with the same features -> i built style GAN because it solves this problem , check it [StyleGAN Repo](https://github.com/HajarHAMDOUCH01/STYLE_GAN_in_pytorch) )
 
 ![image alt](https://github.com/HajarHAMDOUCH01/Convolutiional_VAE/blob/7d5bd27816848aca9a0db128e8ec902dbd36c0fb/generated_face.png)
+![image alt](https://github.com/HajarHAMDOUCH01/Convolutional_VAE_in_pytorch/blob/f5f3be891e2e71c17da74e2be5dafefd8778726a/generated_face_pil%20(1).png)
+![image alt](https://github.com/HajarHAMDOUCH01/Convolutional_VAE_in_pytorch/blob/f5f3be891e2e71c17da74e2be5dafefd8778726a/generated_face_pil%20(2).png)
+![image alt](https://github.com/HajarHAMDOUCH01/Convolutional_VAE_in_pytorch/blob/f5f3be891e2e71c17da74e2be5dafefd8778726a/generated_face_pil%20(3).png)
 
 ## Features
 
